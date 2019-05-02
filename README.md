@@ -1,7 +1,8 @@
 # Crazy_Notes
 
-## 1. Testing environment: Windows 10(other operating system such as macOS and Linux might occur some fatal exceptions since the tool 'timidity' we included in the project is based on Windows).
-## 2. M
+## 1. Testing environment: 
+Windows 10(other operating system such as macOS and Linux might occur some fatal exceptions since the tool 'timidity++' we included in the project is based on Windows).
+## 2. Main Function:
 The main function is in the Main/Welcome, other main functions in other classes are only for testing.
 ## 3. The running instruction is list below:
 	(1) Run the program, click start button.
