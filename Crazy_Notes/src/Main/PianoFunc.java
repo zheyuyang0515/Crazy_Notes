@@ -57,7 +57,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
-public class PianoFunc extends JPanel implements ControlContext {
+public class PianoFunc extends JPanel {
 
     final int PROGRAM = 192;
     final int NOTEON = 144;
@@ -65,7 +65,7 @@ public class PianoFunc extends JPanel implements ControlContext {
     final int SUSTAIN = 64;
     final int REVERB = 91;
     final int ON = 0, OFF = 1;
-    final Color jfcBlue = new Color(204, 204, 255);
+    final Color moveGreen = new Color(100, 200, 100);
     final Color pink = new Color(255, 175, 175);
     final Color pianoBrown = new Color(108, 80, 9);
     Sequencer sequencer;
@@ -73,7 +73,7 @@ public class PianoFunc extends JPanel implements ControlContext {
     Synthesizer synthesizer;
     Instrument instruments[];
     ChannelData channels[];
-    ChannelData cc;    // current channel
+    ChannelData cc;
     JCheckBox mouseOverCB = new JCheckBox("mouseOver", true);
     JSlider veloS, presS, bendS, revbS;
     JCheckBox soloCB, monoCB, muteCB, sustCB; 
@@ -110,16 +110,19 @@ public class PianoFunc extends JPanel implements ControlContext {
 
     public void open() {
         try {
-            if (synthesizer == null) {
+        	if (synthesizer == null) {
                 if ((synthesizer = MidiSystem.getSynthesizer()) == null) {
                     System.out.println("getSynthesizer() failed!");
                     return;
                 }
-            } 
+            }
             synthesizer.open();
             sequencer = MidiSystem.getSequencer();
             sequence = new Sequence(Sequence.PPQ, 10);
-        } catch (Exception ex) { ex.printStackTrace(); return; }
+        } catch (Exception e) { 
+        	e.printStackTrace(); 
+        	return; 
+        }
 
         Soundbank sb = synthesizer.getDefaultSoundbank();
 	if (sb != null) {
@@ -132,7 +135,6 @@ public class PianoFunc extends JPanel implements ControlContext {
             channels[i] = new ChannelData(midiChannels[i], i);
         }
         cc = channels[0];
-
     }
 
 
@@ -160,9 +162,9 @@ public class PianoFunc extends JPanel implements ControlContext {
     public void createShortEvent(int type, int num) {
         ShortMessage message = new ShortMessage();
         try {
-            long millis = System.currentTimeMillis() - startTime;
+        	long millis = System.currentTimeMillis() - startTime;
             long tick = millis * sequence.getResolution() / 500;
-            message.setMessage(type+cc.num, num, cc.velocity); 
+            message.setMessage(type + cc.num, num, cc.velocity); 
             MidiEvent event = new MidiEvent(message, tick);
             track.add(event);
         } catch (Exception ex) { ex.printStackTrace(); }
@@ -295,7 +297,7 @@ public class PianoFunc extends JPanel implements ControlContext {
             for (int i = 0; i < whiteKeys.size(); i++) {
                 Key key = (Key) whiteKeys.get(i);
                 if (key.isNoteOn()) {
-                    g2.setColor(record ? pink : jfcBlue);
+                    g2.setColor(record ? pink : moveGreen);
                     g2.fill(key);
                 }
                 g2.setColor(Color.black);
@@ -304,7 +306,7 @@ public class PianoFunc extends JPanel implements ControlContext {
             for (int i = 0; i < blackKeys.size(); i++) {
                 Key key = (Key) blackKeys.get(i);
                 if (key.isNoteOn()) {
-                    g2.setColor(record ? pink : jfcBlue);
+                    g2.setColor(record ? pink : moveGreen);
                     g2.fill(key);
                     g2.setColor(Color.black);
                     g2.draw(key);
@@ -618,7 +620,8 @@ public class PianoFunc extends JPanel implements ControlContext {
 
         class TrackData extends Object {
             Integer chanNum; String name; Track track;
-            public TrackData(int chanNum, String name, Track track) {
+            @SuppressWarnings("deprecation")
+			public TrackData(int chanNum, String name, Track track) {
                 this.chanNum = new Integer(chanNum);
                 this.name = name;
                 this.track = track;

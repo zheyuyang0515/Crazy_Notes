@@ -1,85 +1,44 @@
 package Functional;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import org.nd4j.linalg.factory.Nd4j;
 
 public class SoundProcess
 {
 	static SoundProcess s = null;
-	private int BUFFER_SIZE;
-	private int bytesRead;
+	private int size;
+	
 	private SourceDataLine soundLine;
-	private File soundFile;
+	private File file;
 	private AudioInputStream audioInputStream;
 	public byte[] header;
-	public Hrtf session;
+	public Hrtf hr;
 	public AudioFormat audioFormat;
 	public DataLine.Info info;
-	public SoundProcess(int bufferSize, File soundFile, Hrtf session)
+	public SoundProcess(int bufferSize, File file, Hrtf hr)
 	{
-		this.session = session;
-		BUFFER_SIZE = bufferSize;
-		this.soundFile = soundFile;
+		this.hr = hr;
+		size = bufferSize;
+		this.file = file;
 		try
 		{
 			openConnection();
-			readHeader(soundFile);
-		} catch (LineUnavailableException
-				| IOException
-				| UnsupportedAudioFileException e)
-		{
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-
-	private void readHeader(File soundFile) throws IOException
-	{
-		FileInputStream stream = new FileInputStream(soundFile);
-		stream.skip(16);
-
-		byte[] chunk = new byte[4];
-		stream.read(chunk);
-
-		ByteBuffer buffer = ByteBuffer.allocate(4);
-		buffer.put(chunk);
-		buffer.rewind();
-		buffer.order(ByteOrder.LITTLE_ENDIAN);
-		long sizeOfChunk = buffer.getInt();
-
-		int headerSize = 0;
-		if(sizeOfChunk == 16)
-		{
-			headerSize = 44;
-		}
-		else
-		{
-			headerSize = 46;
-		}
-
-		header = new byte[headerSize];
-		stream.close();
-		stream = new FileInputStream(soundFile);
-		stream.read(header);
-	}
 	
-	private void openConnection() throws UnsupportedAudioFileException, IOException, LineUnavailableException
+	private void openConnection() throws Exception
 	{
-		audioInputStream = AudioSystem.getAudioInputStream(soundFile);
+		audioInputStream = AudioSystem.getAudioInputStream(file);
 		audioFormat = audioInputStream.getFormat();
 		info = new DataLine.Info(SourceDataLine.class, audioFormat);
 		if(soundLine != null)
@@ -89,7 +48,6 @@ public class SoundProcess
 		soundLine = (SourceDataLine) AudioSystem.getLine(info);
 		soundLine.open(audioFormat); 
 		soundLine.start();
-		bytesRead = 0;
 	}
 
 
@@ -105,15 +63,16 @@ public class SoundProcess
 	
 	public boolean play() throws IOException
 	{
-		byte[] sampledData = new byte[BUFFER_SIZE];
+		int result = 0;
+		byte[] sampledData = new byte[size];
 		try
 		{
-			bytesRead = audioInputStream.read(sampledData, 0, sampledData.length);			
+			result = audioInputStream.read(sampledData, 0, sampledData.length);			
 		} catch (IOException e)
 		{
 			e.printStackTrace();
 		}
-		if (bytesRead >= 0)
+		if (result > 0)
 		{
 			byte[] convoledData = applyHrtf(sampledData);
 			soundLine.write(convoledData, 0, convoledData.length);
@@ -171,8 +130,8 @@ public class SoundProcess
 	{
 		double[] dataDoubles = byteToDouble(data);
 
-		double[] convolvedLeft = Conv(dataDoubles, session.hrir_l.data().asDouble());
-		double[] convolvedRight = Conv(dataDoubles, session.hrir_r.data().asDouble());
+		double[] convolvedLeft = Conv(dataDoubles, hr.hrir_l.data().asDouble());
+		double[] convolvedRight = Conv(dataDoubles, hr.hrir_r.data().asDouble());
 		ByteBuffer leftBuffer = ByteBuffer.wrap(doubleToByte(convolvedLeft));
 		ByteBuffer rightBuffer = ByteBuffer.wrap(doubleToByte(convolvedRight));
 
@@ -191,10 +150,10 @@ public class SoundProcess
 
 	public void changeSoundDirection(double angle)
 	{
-		session.angle = angle;
-		session.reload();
+		hr.angle = angle;
+		hr.reload();
 	}
-	//convolution
+	//conv
 	public double[] Conv(double[] input, double[] core) {
 		int inputlength = input.length;
 		int corelength = core.length;
